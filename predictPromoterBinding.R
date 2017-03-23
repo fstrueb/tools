@@ -3,7 +3,8 @@
 predictPromoterBinding = function(query,
                                   motif.list,
                                   input.assembly,
-                                  p.val,
+                                  return.p.val = FALSE,
+                                  return.sequence = FALSE,
                                   ...) {
   options(stringsAsFactors = FALSE)
   library(magrittr)
@@ -31,6 +32,7 @@ predictPromoterBinding = function(query,
   } else {
     opts[['ID']] = motif.list
   }
+  print('fetching TFBS matrices...')
   motif = TFBSTools::toPWM(TFBSTools::getMatrixSet(JASPAR2016::JASPAR2016, opts))
   
   # scan the sequences!
@@ -41,9 +43,59 @@ predictPromoterBinding = function(query,
     min.score = '80%',
     mc.cores = 8L
   )
-  print('gathering results...')
-  result = TFBSTools::writeGFF3(scannedPromoters, scoreType = 'absolute')
+  # insert status message how many tfbs were found
+  print(paste('found a total of', length(scannedPromoters), 'TFBS...'))
   
+  print('gathering results...')
+  
+  if (return.sequence) {
+    result = TFBSTools::writeGFF3(scannedPromoters, scoreType = 'absolute')
+  } else {
+    result = list()
+    for (x in 1:length(scannedPromoters)) {
+      xx = scannedPromoters[[x]]
+      # extract elements from SiteSetList
+      result[[x]] = list(
+        seqname = as.character(xx@seqname),
+        start = as.numeric(xx@views@ranges@start),
+        end = as.numeric(xx@views@ranges@start + xx@views@ranges@width),
+        score = as.numeric(xx@score),
+        strand = as.character(xx@strand),
+        motif_name = as.character(tags(xx@pattern)$symbol),
+        motif_ID = as.character(ID(xx@pattern)),
+        motif_species = as.character(tags(xx@pattern)$species),
+        motif_evidence = as.character(tags(xx@pattern)$type)
+      )
+    }
+    
+    # filter out NULL results
+    result2 = result[!sapply(result, is.null)] 
+    result3 = as.data.frame(do.call(rbind, result2)) %>%
+      dplyr::filter(start != 'numeric(0)')
+    # MAKE A CHARACTER DATA FRAME 
+    y = as.data.frame(lapply(result3, as.character), stringsAsFactors = F) %>%
+      dplyr::mutate(mergeID = row_number())
+   
+    fun = function(z) {
+      maxCols = max(sapply(strsplit(as.character(z$start),','), length))
+      unnestedCols = separate(z, start, paste0('start_', 1:maxCols), sep = ',') %>%
+        separate(end, paste0('end_', 1:maxCols), sep = ',') %>%
+        separate(score, paste0('score_', 1:maxCols), sep = ',') %>%
+        separate(strand, paste0('strand_', 1:maxCols), sep = ',') %>%
+        gather(key, value, starts_with('start'), starts_with('end'), starts_with('score'), starts_with('strand')) %>%
+        mutate(value = gsub(x = value, pattern = 'c\\(', replacement = '')) %>%
+        mutate(value = gsub(x = value, pattern = '\\)', replacement = '')) %>%
+        mutate(value = gsub(x = value, pattern = '\"', replacement = '')) %>%
+        separate(key, c('key', 'motif_hit'), sep = '_') %>%
+        spread(key, value) %>%
+        select(motif_ID, motif_hit, seqname, start, end, strand, everything())
+      return(unnestedCols)
+    }
+    
+    
+    result = purrr::by_row(y, fun, .collate = 'rows')[12:22]
+  }
+
   ## implement later start ----
   ## scan using pairwise alignments
   # chain = import.chain('mm9.hg19.all.chain')
@@ -54,22 +106,35 @@ predictPromoterBinding = function(query,
   # return the combined dataframe
   stopifnot(length(dna) == length(query))
   
-  result = with(result, cbind(
-    result,
-    reshape::colsplit(
-      attributes,
-      split = '\\;',
-      names = c('TF', 'TF_class', 'TF_sequence')
-    )
-  )) %>%
-    dplyr::mutate(seqname = as.numeric(seqname)) %>%
-    dplyr::select(-source, -feature, -frame, -attributes) %>%
-    dplyr::rename(
-      motif_start = start,
-      motif_end = end,
-      motif_strand = strand,
-      motif_score = score
-    )
+  if (return.sequence) {
+    result = with(result, cbind(
+      result,
+      reshape::colsplit(
+        attributes,
+        split = '\\;',
+        names = c('TF', 'TF_class', 'TF_sequence')
+      )
+    )) %>%
+      dplyr::mutate(seqname = as.numeric(seqname)) %>%
+      dplyr::select(-source, -feature, -frame, -attributes) %>%
+      dplyr::rename(
+        motif_start = start,
+        motif_end = end,
+        motif_strand = strand,
+        motif_score = score
+      )
+  } else {
+    result = result %>%
+      dplyr::rename(
+        motif_start = start,
+        motif_end = end,
+        motif_strand = strand,
+        motif_score = score
+      ) %>%
+      dplyr::mutate(seqname = as.numeric(seqname))
+    
+  }
+  
   # caveat --> naming convention of column 'geneSymbol'
   helper = query[result$seqname]@elementMetadata$geneSymbol
   seqnames = query[result$seqname]@seqnames
@@ -78,7 +143,7 @@ predictPromoterBinding = function(query,
   strand = query[result$seqname]@strand
   result2 = cbind(helper, seqnames, seqranges, strand, result)
   
-  if (p.val == T) {
+  if (return.p.val) {
     print('calculating p-values...')
     scannedPromoters.pval = TFBSTools::pvalues(scannedPromoters)
     pval = unlist(scannedPromoters.pval)
