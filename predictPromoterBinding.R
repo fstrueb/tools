@@ -40,7 +40,7 @@ predictPromoterBinding = function(query,
   scannedPromoters = TFBSTools::searchSeq(
     x = motif,
     subject = dna,
-    min.score = '80%',
+    min.score = '90%',
     mc.cores = 8L
   )
   # insert status message how many tfbs were found
@@ -61,10 +61,10 @@ predictPromoterBinding = function(query,
         end = as.numeric(xx@views@ranges@start + xx@views@ranges@width),
         score = as.numeric(xx@score),
         strand = as.character(xx@strand),
-        motif_name = as.character(tags(xx@pattern)$symbol),
-        motif_ID = as.character(ID(xx@pattern)),
-        motif_species = as.character(tags(xx@pattern)$species),
-        motif_evidence = as.character(tags(xx@pattern)$type)
+        motif_name = as.character(TFBSTools::tags(xx@pattern)$symbol),
+        motif_ID = as.character(TFBSTools::ID(xx@pattern)),
+        motif_species = as.character(TFBSTools::tags(xx@pattern)$species),
+        motif_evidence = as.character(TFBSTools::tags(xx@pattern)$type)
       )
     }
     
@@ -157,7 +157,10 @@ predictPromoterBinding = function(query,
       promoter = helper,
       query_strand = strand,
       query_chromosome = seqnames
-    )
+    ) %>%
+    dplyr::mutate(motif_start = as.numeric(motif_start), 
+                  motif_end = as.numeric(motif_end)) %>%
+    dplyr::mutate(motif_strand = stringr::str_trim(motif_strand, side = 'both'))
   
   return(result2)
 }
