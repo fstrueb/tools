@@ -78,17 +78,17 @@ predictPromoterBinding = function(query,
    
     fun = function(z) {
       maxCols = max(sapply(strsplit(as.character(z$start),','), length))
-      unnestedCols = separate(z, start, paste0('start_', 1:maxCols), sep = ',') %>%
-        separate(end, paste0('end_', 1:maxCols), sep = ',') %>%
-        separate(score, paste0('score_', 1:maxCols), sep = ',') %>%
-        separate(strand, paste0('strand_', 1:maxCols), sep = ',') %>%
-        gather(key, value, starts_with('start'), starts_with('end'), starts_with('score'), starts_with('strand')) %>%
-        mutate(value = gsub(x = value, pattern = 'c\\(', replacement = '')) %>%
-        mutate(value = gsub(x = value, pattern = '\\)', replacement = '')) %>%
-        mutate(value = gsub(x = value, pattern = '\"', replacement = '')) %>%
-        separate(key, c('key', 'motif_hit'), sep = '_') %>%
-        spread(key, value) %>%
-        select(motif_ID, motif_hit, seqname, start, end, strand, everything())
+      unnestedCols = tidyr::separate(z, start, paste0('start_', 1:maxCols), sep = ',') %>%
+        tidyr::separate(end, paste0('end_', 1:maxCols), sep = ',') %>%
+        tidyr::separate(score, paste0('score_', 1:maxCols), sep = ',') %>%
+        tidyr::separate(strand, paste0('strand_', 1:maxCols), sep = ',') %>%
+        tidyr::gather(key, value, dplyr::starts_with('start'), dplyr::starts_with('end'), dplyr::starts_with('score'), dplyr::starts_with('strand')) %>%
+        dplyr::mutate(value = gsub(x = value, pattern = 'c\\(', replacement = '')) %>%
+        dplyr::mutate(value = gsub(x = value, pattern = '\\)', replacement = '')) %>%
+        dplyr::mutate(value = gsub(x = value, pattern = '\"', replacement = '')) %>%
+        tidyr::separate(key, c('key', 'motif_hit'), sep = '_') %>%
+        tidyr::spread(key, value) %>%
+        dplyr::select(motif_ID, motif_hit, seqname, start, end, strand, dplyr::everything())
       return(unnestedCols)
     }
     
@@ -160,7 +160,8 @@ predictPromoterBinding = function(query,
     ) %>%
     dplyr::mutate(motif_start = as.numeric(motif_start), 
                   motif_end = as.numeric(motif_end)) %>%
-    dplyr::mutate(motif_strand = stringr::str_trim(motif_strand, side = 'both'))
+    dplyr::mutate(motif_strand = stringr::str_trim(motif_strand, side = 'both')) %>%
+    dplyr::mutate(motif_hit = as.numeric(motif_hit))
   
   return(result2)
 }
