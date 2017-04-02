@@ -6,6 +6,7 @@ scanRangeForTFBS = function(query,
                                   input.assembly,
                                   return.p.val = FALSE,
                                   return.sequence = FALSE,
+                                  updateProgress = NULL,
                                   ...) {
   options(stringsAsFactors = FALSE)
   library(magrittr)
@@ -34,11 +35,11 @@ scanRangeForTFBS = function(query,
   
   # motif.list can either be a vector with JASPAR IDs or character string 'all'
   opts = list()
-  if (motif.list == 'all') {
-    opts['all'] = T
-  } else {
+  # if (motif.list == 'all') {
+  #   opts['all'] = T
+  # } else {
     opts[['ID']] = motif.list
-  }
+  # }
   ########### STEP 2 ###############
   if (is.function(updateProgress)) {
     text <- ('fetching TFBS matrices...')
