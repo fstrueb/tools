@@ -1,13 +1,14 @@
 # function to scan promoters defined by CAGE expression of dataset of interest for TFBS
 # the regulatory elements to scan for TFBS should come in a GRanges format, where every row/region of interest should correspond to exactly one regulatory element (promoter/enhancer/genomic anchor)
 
-scanRangeForTFBS = function(query,
-                                  motif.list,
-                                  input.assembly,
-                                  return.p.val = FALSE,
-                                  return.sequence = FALSE,
-                                  updateProgress = NULL,
-                                  ...) {
+scanRangeForTFBS = function(
+  query,
+  motif.list,
+  input.assembly,
+  return.p.val = FALSE,
+  return.sequence = FALSE,
+  updateProgress = NULL,
+  ...) {
   options(stringsAsFactors = FALSE)
   library(magrittr)
   
@@ -28,8 +29,8 @@ scanRangeForTFBS = function(query,
     text <- ('fetching DNA...')
     updateProgress(detail = text)
   } else {
-  # extract DNA seq from promoters, return a DNAStringSet object
-  print('fetching DNA...')
+    # extract DNA seq from promoters, return a DNAStringSet object
+    print('fetching DNA...')
   }
   dna = Biostrings::getSeq(anno, query)
   
@@ -38,7 +39,7 @@ scanRangeForTFBS = function(query,
   # if (motif.list == 'all') {
   #   opts['all'] = T
   # } else {
-    opts[['ID']] = motif.list
+  opts[['ID']] = motif.list
   # }
   ########### STEP 2 ###############
   if (is.function(updateProgress)) {
@@ -52,7 +53,7 @@ scanRangeForTFBS = function(query,
   
   ########### STEP 3 ###############
   if (is.function(updateProgress)) {
-    text <- ('scanning the sequence...')
+    text <- paste('found a total of', length(motif), 'motifs, scanning the sequence...')
     updateProgress(detail = text)
   } else {
     # extract DNA seq from promoters, return a DNAStringSet object
@@ -69,14 +70,14 @@ scanRangeForTFBS = function(query,
   ############ STEP 4 ##############
   # insert status message how many tfbs were found
   if (is.function(updateProgress)) {
-    text <- paste('found a total of', length(scannedPromoters), 'TFBS, gathering results...')
+    text <- paste('gathering results...')
     updateProgress(detail = text)
   } else {
     # extract DNA seq from promoters, return a DNAStringSet object
     print(paste('found a total of', length(scannedPromoters), 'TFBS, gathering results...'))
   }
-
   
+  ####### try different types of tranlating searchSeq output to human-readable format
   if (return.sequence) {
     result = TFBSTools::writeGFF3(scannedPromoters, scoreType = 'absolute')
   } else {
@@ -104,7 +105,7 @@ scanRangeForTFBS = function(query,
     # MAKE A CHARACTER DATA FRAME 
     y = as.data.frame(lapply(result3, as.character), stringsAsFactors = F) %>%
       dplyr::mutate(mergeID = row_number())
-   
+    
     fun = function(z) {
       maxCols = max(sapply(strsplit(as.character(z$start),','), length))
       unnestedCols = tidyr::separate(z, start, paste0('start_', 1:maxCols), sep = ',') %>%
@@ -124,7 +125,7 @@ scanRangeForTFBS = function(query,
     
     result = purrr::by_row(y, fun, .collate = 'rows')[12:22]
   }
-
+  
   ## implement later start ----
   ## scan using pairwise alignments
   # chain = import.chain('mm9.hg19.all.chain')
@@ -199,7 +200,7 @@ scanRangeForTFBS = function(query,
       query_chromosome = seqnames
     ) %>%
     dplyr::mutate(motif_start = as.numeric(motif_start), 
-                  motif_end = as.numeric(motif_end)) %>%
+      motif_end = as.numeric(motif_end)) %>%
     dplyr::mutate(motif_strand = stringr::str_trim(motif_strand, side = 'both')) %>%
     dplyr::mutate(motif_hit = as.numeric(motif_hit))
   
