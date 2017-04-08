@@ -11,6 +11,7 @@ source('../R_functions/scanRangeForTFBS.R')
 source('../R_functions/siteSetToDataFrame.R')
 source('../R_functions/unlistJASPAR.R')
 source('../R_functions/standardizeSeqlevels.R')
+source('../R_functions/siteSetListSummary.R')
 
 
 shinyServer(function(input, output, session) {
@@ -35,7 +36,7 @@ shinyServer(function(input, output, session) {
   })
   
   ############ REACTIVE VALUES ###########
-
+  
   
   rangeObj = reactiveValues(
     # species = 'mouse' 
@@ -82,7 +83,7 @@ shinyServer(function(input, output, session) {
   observeEvent(input$acceptRange, {
     # disable the button once the submit button is clicked
     shinyjs::disable('acceptRange')
-    output$rangeSummary = renderDataTable({
+    output$rangeSummary = renderDataTable(options = list(pageLength = 25, scrollX = T), {
       #input$acceptRange 
       # Create a Progress object
       progress <- shiny::Progress$new(style = 'notification')
@@ -116,37 +117,31 @@ shinyServer(function(input, output, session) {
         isolate({
           if (is.null(input$resultMotifs)) {
             motif.list = unlistJASPAR(species = scanDetails$species, collection = scanDetails$collection)
-            scanRes = siteSetToDataFrame(scanRangeForTFBS(query = range, 
+            scanRes = scanRangeForTFBS(query = range, 
               motif.list = motif.list$motif_ID, 
               input.assembly = rangeObj$assembly, 
-              updateProgress),
-              query = range,
-              return.p.val = F, 
-              return.sequence = F, 
               updateProgress)
           } else {
-            scanRes = siteSetToDataFrame(scanRangeForTFBS(query = range, 
+            scanRes = scanRangeForTFBS(query = range, 
               motif.list = isolate(input$resultMotifs), 
               input.assembly = range$assembly, 
-              updateProgress),
-              query = range,
-              return.sequence = F, 
-              return.p.val = F, 
               updateProgress)
           }
         })
       })
+      scanResSum = siteSetListSummary(query = range, siteSetList = scanRes)
+      
       
       ### implement pvalue and motif return functionality here, update second progress bar
       
       # re-enable the submit button
       shinyjs::enable('acceptRange')
       # update the scanRes object
-      scanResults$df = scanRes
-      scanRes
-    },
+      scanResults$summary = scanResSum
+      scanResSum
+    }
       # enable scroll bar for data table output
-      options = list(scrollX = TRUE))
+    )
     # must update reSummary output
     output$reSummaryTable = renderDataTable(scanResults$df, options = list(scrollX = TRUE))
   })
