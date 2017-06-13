@@ -1,13 +1,13 @@
 siteSetToDataFrame = function(input, query, return.sequence = F, return.p.val = F, updateProgress, ...) {
 scannedRange = input
-############ STEP 4 ##############
+############ STEP 1 ##############
 # insert status message how many tfbs were found
 if (is.function(updateProgress)) {
-  text <- paste('gathering results...')
+  text <- paste('Gathering results for', length(scannedRange), 'TFBS...')
   updateProgress(detail = text)
 } else {
   # extract DNA seq from promoters, return a DNAStringSet object
-  print(paste('found a total of', length(scannedRange), 'TFBS, gathering results...'))
+  print(paste('Gathering results for', length(scannedRange), 'TFBS...'))
 }
 
 ####### try different types of tranlating searchSeq output to human-readable format
@@ -30,6 +30,17 @@ if (return.sequence) {
       motif_evidence = as.character(TFBSTools::tags(xx@pattern)$type)
     )
   }
+  
+  ############ STEP 2 ##############
+  # insert status message how many tfbs were found
+  if (is.function(updateProgress)) {
+    text <- paste('TFBS extraction completed, converting objects...')
+    updateProgress(detail = text)
+  } else {
+    # extract DNA seq from promoters, return a DNAStringSet object
+    print(paste('TFBS extraction completed, converting objects...'))
+  }
+  
   # filter out NULL results
   result2 = result[!sapply(result, is.null)] 
   result3 = as.data.frame(do.call(rbind, result2)) %>%
@@ -52,7 +63,26 @@ if (return.sequence) {
       dplyr::select(motif_ID, motif_hit, seqname, start, end, strand, dplyr::everything())
     return(unnestedCols)
   }
-  result = purrr::by_row(y, fun, .collate = 'rows')[12:22]
+  ############ STEP 3 ##############
+  # insert status message how many tfbs were found
+  if (is.function(updateProgress)) {
+    text <- paste('Character conversion completed, ordering rows...')
+    updateProgress(detail = text)
+  } else {
+    # extract DNA seq from promoters, return a DNAStringSet object
+    print(paste('Character conversion completed, ordering rows...'))
+  }
+  
+  result = purrrlyr::by_row(y, fun, .collate = 'rows')[12:22]
+  ############ STEP 4 ##############
+  # insert status message how many tfbs were found
+  if (is.function(updateProgress)) {
+    text <- paste('Concatenation successful, please wait...')
+    updateProgress(detail = text)
+  } else {
+    # extract DNA seq from promoters, return a DNAStringSet object
+    print(paste('Concatenation successful, please wait...'))
+  }
 }
 
 ## implement later start ----

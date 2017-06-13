@@ -72,8 +72,12 @@ scanRangeForTFBS = function(
     # extract DNA seq from promoters, return a DNAStringSet object
     print('fetching TFBS matrices...')
   }
-  motif = TFBSTools::toPWM(TFBSTools::getMatrixSet(JASPAR2016::JASPAR2016, opts))
-  
+  if (is.character(motif.list)) {
+    motif = TFBSTools::toPWM(TFBSTools::getMatrixSet(JASPAR2016::JASPAR2016, opts))
+  } else {
+    motif = motif.list
+  }
+
   ########### STEP 3 ###############
   if (is.function(updateProgress)) {
     text <- paste('found a total of', length(motif), 'motifs, scanning the sequence...')

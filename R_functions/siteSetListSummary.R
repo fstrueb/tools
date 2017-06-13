@@ -1,7 +1,7 @@
 library(RSQLite)
 library(TFBSTools)
 
-siteSetListSummary = function(query, siteSetList) {
+siteSetListSummary = function(query, siteSetList, updateProgress) {
   x = siteSetList
   # x = scannedRange
   
@@ -10,9 +10,16 @@ siteSetListSummary = function(query, siteSetList) {
   } else {
     stop('`query` must be a GenomicRanges object')
   }
-  
-  # first set the GRanges query frame
+
   # queryLength = length(query)
+  ########### STEP 1 ###############
+  if (is.function(updateProgress)) {
+    text <- ('gathering results...')
+    updateProgress(detail = text)
+  } else {
+    # extract DNA seq from promoters, return a DNAStringSet object
+    print('gathering results...')
+  }
   
   motif_ID = unlist(lapply(x, function(z) {ID(z@pattern)}))
   motif_lengths = unlist(lapply(x, function(z) {length(z@views)}))
@@ -32,6 +39,16 @@ siteSetListSummary = function(query, siteSetList) {
     tidyr::unite(col = MOTIF_ID, BASE_ID, VERSION, sep = '.') %>%
     # dplyr::rename(MOTIF_ID = BASE_ID) %>%
     dplyr::filter(MOTIF_ID %in% motifSummary$motif_ID.version)
+
+  # queryLength = length(query)
+  ########### STEP 1 ###############
+  if (is.function(updateProgress)) {
+    text <- ('summarizing...')
+    updateProgress(detail = text)
+  } else {
+    # extract DNA seq from promoters, return a DNAStringSet object
+    print('summarizing...')
+  }
   
   motifSummary = motifSummary %>%
     group_by(motif_ID.version) %>%
