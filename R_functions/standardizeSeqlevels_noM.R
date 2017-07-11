@@ -34,7 +34,7 @@ standardizeSeqlevels_noM = function(range,
       rangeDF = as.data.frame(range) %>%
         dplyr::mutate(seqnames = gsub(seqnames, pattern = 'chr', replacement = ''))
       range = GenomicRanges::makeGRangesFromDataFrame(rangeDF, keep.extra.columns = T)
-      range = GenomeInfoDb::keepSeqlevels(x = range, value = seqlevelsNew)
+      range = GenomeInfoDb::keepSeqlevels(x = range, value = seqlevelsNew, pruning.mode = 'coarse')
     }
     
     else {
